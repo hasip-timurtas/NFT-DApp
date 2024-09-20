@@ -1,17 +1,17 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <img alt="Vue logo" src="./assets/logo.png" />
+  <MintToken />
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import MintToken from "./components/MintToken.vue";
 
 export default {
-  name: 'App',
+  name: "App",
   components: {
-    HelloWorld
-  }
-}
+    MintToken,
+  },
+};
 </script>
 
 <style>
