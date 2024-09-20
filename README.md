@@ -1,5 +1,8 @@
 # nft-dapp
 
+a DApp (Decentralized Application) that enables users to interact with digital assets on the Ethereum blockchain using a provided ERC-721 (NFT) smart contract.
+
+
 ## Project setup
 ```
 npm install
