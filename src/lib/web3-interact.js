@@ -15,7 +15,6 @@ export const connectWallet = async () => {
   }
 
   try {
-    // Request wallet connection
     await window.ethereum.request({ method: 'eth_requestAccounts' });
     web3.setProvider(window.ethereum);
     const accounts = await web3.eth.getAccounts();
@@ -33,14 +32,10 @@ export const connectWallet = async () => {
   } catch (err) {
     console.error('Error connecting wallet:', err);
 
-    if (err.code === 4001) {
-      return {
-        status: 'Connection request was denied by the user.',
-      };
-    }
-
     return {
-      status: `An error occurred: ${err.message}`,
+      status: err.code === 4001
+        ? 'Connection request was denied by the user.'
+        : `An error occurred: ${err.message}`,
     };
   }
 };
@@ -70,15 +65,10 @@ export const getCurrentWalletConnected = async () => {
   } catch (err) {
     console.error('Error fetching accounts:', err);
 
-    if (err.code === 4001) {
-      // User rejected the request
-      return {
-        status: 'Access to wallet was denied by the user.',
-      };
-    }
-
     return {
-      status: `An error occurred: ${err.message}`,
+      status: err.code === 4001
+        ? 'Access to wallet was denied by the user.'
+        : `An error occurred: ${err.message}`,
     };
   }
 };
@@ -88,7 +78,6 @@ async function initializeContract() {
 }
 
 export const mintToken = async (url, name, description) => {
-  // Validate inputs
   if (!url.trim() || !name.trim() || !description.trim()) {
     return {
       success: false,
@@ -96,14 +85,12 @@ export const mintToken = async (url, name, description) => {
     };
   }
 
-  // Prepare metadata
   const metadata = {
     name: name,
     image: url,
     description: description,
   };
 
-  // Upload metadata to IPFS
   const pinataResponse = await uploadJsonToIpfs(metadata);
   if (!pinataResponse.success) {
     return {
@@ -114,17 +101,14 @@ export const mintToken = async (url, name, description) => {
   const tokenURI = pinataResponse.pinataUrl;
 
   try {
-    // Initialize the contract
     const contract = await initializeContract();
 
-    // Define the transaction details
     const transactionDetails = {
       to: nftContractAddress,
       from: window.ethereum.selectedAddress,
       data: contract.methods.mintNFT(window.ethereum.selectedAddress, tokenURI).encodeABI(),
     };
 
-    // Send the transaction
     const transactionHash = await window.ethereum.request({
       method: 'eth_sendTransaction',
       params: [transactionDetails],
@@ -138,6 +122,45 @@ export const mintToken = async (url, name, description) => {
     return {
       success: false,
       status: `Failed to mint the NFT: ${error.message}`,
+    };
+  }
+};
+
+// New: Transfer NFT function
+export const transferNFT = async (tokenId, recipientAddress) => {
+  if (!tokenId || !recipientAddress.trim()) {
+    return {
+      success: false,
+      status: 'Token ID and recipient address are required for transfer.',
+    };
+  }
+
+  try {
+    const contract = await initializeContract();
+
+    const transactionDetails = {
+      to: nftContractAddress,
+      from: window.ethereum.selectedAddress,
+      data: contract.methods.transferFrom(
+        window.ethereum.selectedAddress,
+        recipientAddress,
+        tokenId
+      ).encodeABI(),
+    };
+
+    const transactionHash = await window.ethereum.request({
+      method: 'eth_sendTransaction',
+      params: [transactionDetails],
+    });
+
+    return {
+      success: true,
+      status: `NFT transferred successfully! View it on Etherscan: https://sepolia.etherscan.io/tx/${transactionHash}`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      status: `Failed to transfer the NFT: ${error.message}`,
     };
   }
 };

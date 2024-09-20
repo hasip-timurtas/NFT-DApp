@@ -42,6 +42,30 @@
 
       <button type="submit" id="mintNFTButton">Mint NFT</button>
     </form>
+
+    <hr />
+
+    <h2 id="transferTitle">Transfer Your NFT</h2>
+    <form @submit.prevent="handleTransfer">
+      <label for="tokenId">Token ID:</label>
+      <input
+        id="tokenId"
+        type="text"
+        placeholder="Enter the Token ID of your NFT"
+        v-model="tokenId"
+      />
+
+      <label for="recipientAddress">Recipient Address:</label>
+      <input
+        id="recipientAddress"
+        type="text"
+        placeholder="Enter the recipient's wallet address"
+        v-model="recipientAddress"
+      />
+
+      <button type="submit" id="transferNFTButton">Transfer NFT</button>
+    </form>
+
     <p id="transactionStatus" v-if="statusMessage" :style="{ color: 'red' }">
       {{ statusMessage }}
     </p>
@@ -54,6 +78,7 @@ import {
   connectWallet,
   getCurrentWalletConnected,
   mintToken,
+  transferNFT,
 } from "../lib/web3-interact";
 
 export default {
@@ -64,6 +89,9 @@ export default {
     const nftName = ref("");
     const nftDescription = ref("");
     const assetUrl = ref("");
+
+    const tokenId = ref("");
+    const recipientAddress = ref("");
 
     onMounted(async () => {
       const { address, status } = await getCurrentWalletConnected();
@@ -78,7 +106,7 @@ export default {
         window.ethereum.on("accountsChanged", (accounts) => {
           if (accounts.length > 0) {
             walletAddress.value = accounts[0];
-            statusMessage.value = "You can now mint your NFT.";
+            statusMessage.value = "You can now mint or transfer your NFT.";
           } else {
             walletAddress.value = null;
             statusMessage.value = "Please connect to Metamask.";
@@ -103,14 +131,30 @@ export default {
       );
       statusMessage.value = status;
       if (success) {
-        resetForm();
+        resetMintForm();
       }
     };
 
-    function resetForm() {
+    const handleTransfer = async () => {
+      const { success, status } = await transferNFT(
+        tokenId.value,
+        recipientAddress.value
+      );
+      statusMessage.value = status;
+      if (success) {
+        resetTransferForm();
+      }
+    };
+
+    function resetMintForm() {
       nftName.value = "";
       nftDescription.value = "";
       assetUrl.value = "";
+    }
+
+    function resetTransferForm() {
+      tokenId.value = "";
+      recipientAddress.value = "";
     }
 
     return {
@@ -119,8 +163,11 @@ export default {
       nftName,
       nftDescription,
       assetUrl,
+      tokenId,
+      recipientAddress,
       handleWalletConnection,
       handleMinting,
+      handleTransfer,
     };
   },
 };
