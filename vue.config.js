@@ -4,6 +4,7 @@ module.exports = defineConfig({
   transpileDependencies: true,
 
   devServer: {
+    publicPath: process.env.NODE_ENV === 'production' ? '/NFT-DApp/' : '/',
     host: '0.0.0.0',
     allowedHosts: 'all',
     client: {
