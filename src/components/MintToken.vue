@@ -3,17 +3,14 @@
     <button id="walletButton" @click="handleWalletConnection">
       {{
         walletAddress
-          ? `Connected: ${walletAddress.slice(0, 6)}...${walletAddress.slice(
-              -4
-            )}`
+          ? `Connected: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
           : "Connect Wallet"
       }}
     </button>
 
     <h1 id="pageTitle">NFT Minting Tool</h1>
     <p>
-      Provide the asset link, name, and description below, then click "Mint" to
-      create your NFT.
+      Provide the asset link, name, and description below, then click "Mint" to create your NFT.
     </p>
     <form @submit.prevent="handleMinting">
       <label for="assetLink">Asset URL:</label>
@@ -66,6 +63,17 @@
       <button type="submit" id="transferNFTButton">Transfer NFT</button>
     </form>
 
+    <hr />
+
+    <h2 id="ownedNftsTitle">Your NFTs</h2>
+    <button @click="fetchMyNFTs">Load My NFTs</button>
+    <ul v-if="ownedNfts && ownedNfts.length > 0">
+      <li v-for="nft in ownedNfts" :key="nft.tokenId">
+        Token ID: {{ nft.tokenId }} - <a :href="nft.tokenURI" target="_blank">View NFT Metadata</a>
+      </li>
+    </ul>
+    <p v-else>No NFTs found for this wallet.</p>
+
     <p id="transactionStatus" v-if="statusMessage" :style="{ color: 'red' }">
       {{ statusMessage }}
     </p>
@@ -79,6 +87,7 @@ import {
   getCurrentWalletConnected,
   mintToken,
   transferNFT,
+  fetchOwnedNFTs,
 } from "../lib/web3-interact";
 
 export default {
@@ -92,6 +101,7 @@ export default {
 
     const tokenId = ref("");
     const recipientAddress = ref("");
+    const ownedNfts = ref([]);
 
     onMounted(async () => {
       const { address, status } = await getCurrentWalletConnected();
@@ -106,7 +116,7 @@ export default {
         window.ethereum.on("accountsChanged", (accounts) => {
           if (accounts.length > 0) {
             walletAddress.value = accounts[0];
-            statusMessage.value = "You can now mint or transfer your NFT.";
+            statusMessage.value = "You can now mint, transfer, or view your NFTs.";
           } else {
             walletAddress.value = null;
             statusMessage.value = "Please connect to Metamask.";
@@ -146,6 +156,12 @@ export default {
       }
     };
 
+    const fetchMyNFTs = async () => {
+      const { nfts, status } = await fetchOwnedNFTs(walletAddress.value);
+      ownedNfts.value = nfts;
+      statusMessage.value = status;
+    };
+
     function resetMintForm() {
       nftName.value = "";
       nftDescription.value = "";
@@ -165,9 +181,11 @@ export default {
       assetUrl,
       tokenId,
       recipientAddress,
+      ownedNfts,
       handleWalletConnection,
       handleMinting,
       handleTransfer,
+      fetchMyNFTs,
     };
   },
 };

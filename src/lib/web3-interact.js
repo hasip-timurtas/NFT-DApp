@@ -164,3 +164,29 @@ export const transferNFT = async (tokenId, recipientAddress) => {
     };
   }
 };
+
+export const fetchOwnedNFTs = async (walletAddress) => {
+  try {
+    const contract = await initializeContract();
+    console.log({ contract, walletAddress })
+    const balance = await contract.methods.balanceOf(walletAddress).call();
+    console.log({ balance })
+    const nfts = [];
+    for (let i = 0; i < balance; i++) {
+      const tokenId = await contract.methods.tokenOfOwnerByIndex(walletAddress, i).call();
+      const tokenURI = await contract.methods.tokenURI(tokenId).call();
+      nfts.push({ tokenId, tokenURI });
+    }
+
+    return {
+      success: true,
+      nfts: nfts,
+      status: 'NFTs fetched successfully.',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      status: `Failed to fetch NFTs: ${error.message}`,
+    };
+  }
+};

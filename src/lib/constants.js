@@ -1,4 +1,4 @@
-const nftContractAddress = '0x4C4a07F737Bf57F6632B6CAB089B78f62385aCaE';
+const nftContractAddress = '0x1501c2505f4e3c99931a7aa593f5a102ba202c4e'; // the one I uploaded to Sepolia testnet
 const infuraProjectId = process.env.VUE_APP_INFURA_PROJECT_ID;
 const pinataKey = process.env.VUE_APP_PINATA_KEY;
 const pinataSecret = process.env.VUE_APP_PINATA_SECRET;
