@@ -5,7 +5,7 @@ import { uploadJsonToIpfs } from './pinata.js';
 const infuraUrl = `https://sepolia.infura.io/v3/${infuraProjectId}`;
 const web3 = new Web3(new Web3.providers.HttpProvider(infuraUrl));
 
-const contractABI = require('../contract-abi.json');
+const contractABI = require('../MhtNFT-contract-abi.json');
 
 export const connectWallet = async () => {
   if (!window.ethereum) {

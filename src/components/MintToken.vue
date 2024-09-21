@@ -108,6 +108,7 @@ export default {
       walletAddress.value = address;
       statusMessage.value = status;
 
+      await fetchMyNFTs();
       listenForAccountChanges();
     });
 
