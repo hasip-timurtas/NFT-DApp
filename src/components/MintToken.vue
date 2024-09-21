@@ -96,12 +96,14 @@ export default {
 
     function listenForAccountChanges() {
       if (window.ethereum) {
-        window.ethereum.on("accountsChanged", (accounts) => {
+        window.ethereum.on("accountsChanged", async (accounts) => {
           if (accounts.length > 0) {
             walletAddress.value = accounts[0];
-            statusMessage.value = "You can now mint, transfer, or view your NFTs.";
+            statusMessage.value = "Wallet changed. Fetching your NFTs...";
+            await fetchMyNFTs();  // Fetch NFTs when wallet changes
           } else {
             walletAddress.value = null;
+            ownedNfts.value = [];  // Clear NFTs when no wallet is connected
             statusMessage.value = "Please connect to Metamask.";
           }
         });
@@ -188,10 +190,23 @@ export default {
 </script>
 
 <style>
-/* Your styles will go here */
 .owned-nfts {
   display: flex;
-  width: 100%;
-  justify-content: space-evenly;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.nft {
+  text-align: center;
+  max-width: 150px;
+}
+
+.nft img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 5px;
+  background-color: #f9f9f9;
 }
 </style>
