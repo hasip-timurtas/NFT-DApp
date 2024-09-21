@@ -1,6 +1,6 @@
 import Web3 from 'web3';
 import { infuraProjectId, nftContractAddress } from './constants';
-import { uploadJsonToIpfs } from './pinata.js';
+import { uploadImageToIpfs } from './pinata.js';
 
 const infuraUrl = `https://sepolia.infura.io/v3/${infuraProjectId}`;
 const web3 = new Web3(new Web3.providers.HttpProvider(infuraUrl));
@@ -77,28 +77,24 @@ async function initializeContract() {
   return new web3.eth.Contract(contractABI, nftContractAddress);
 }
 
-export const mintToken = async (url, name, description) => {
-  if (!url.trim() || !name.trim() || !description.trim()) {
+export const mintToken = async (file) => {
+  if (!file) {
     return {
       success: false,
-      status: 'Please fill out all fields before proceeding with the minting process.',
+      status: 'Please upload an image file before minting.',
     };
   }
 
-  const metadata = {
-    name: name,
-    image: url,
-    description: description,
-  };
-
-  const pinataResponse = await uploadJsonToIpfs(metadata);
-  if (!pinataResponse.success) {
+  // Upload the image to IPFS
+  const imageResponse = await uploadImageToIpfs(file);
+  if (!imageResponse.success) {
     return {
       success: false,
-      status: 'An error occurred while uploading the token metadata to IPFS.',
+      status: 'An error occurred while uploading the image to IPFS.',
     };
   }
-  const tokenURI = pinataResponse.pinataUrl;
+
+  const imageUrl = imageResponse.pinataUrl;
 
   try {
     const contract = await initializeContract();
@@ -106,7 +102,7 @@ export const mintToken = async (url, name, description) => {
     const transactionDetails = {
       to: nftContractAddress,
       from: window.ethereum.selectedAddress,
-      data: contract.methods.mintNFT(window.ethereum.selectedAddress, tokenURI).encodeABI(),
+      data: contract.methods.mintNFT(window.ethereum.selectedAddress, imageUrl).encodeABI(),
     };
 
     const transactionHash = await window.ethereum.request({
@@ -168,9 +164,7 @@ export const transferNFT = async (tokenId, recipientAddress) => {
 export const fetchOwnedNFTs = async (walletAddress) => {
   try {
     const contract = await initializeContract();
-    console.log({ contract, walletAddress })
     const balance = await contract.methods.balanceOf(walletAddress).call();
-    console.log({ balance })
     const nfts = [];
     for (let i = 0; i < balance; i++) {
       const tokenId = await contract.methods.tokenOfOwnerByIndex(walletAddress, i).call();

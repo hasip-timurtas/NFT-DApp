@@ -1,5 +1,6 @@
 <template>
   <div class="nft-minter">
+    <!-- Connect Wallet Button -->
     <button id="walletButton" @click="handleWalletConnection">
       {{
         walletAddress
@@ -8,50 +9,29 @@
       }}
     </button>
 
+    <!-- Minting Section -->
     <h1 id="pageTitle">NFT Minting Tool</h1>
-    <p>
-      Provide the asset link, name, and description below, then click "Mint" to create your NFT.
-    </p>
+    <p>Upload an image and click "Mint" to create your NFT.</p>
+    
     <form @submit.prevent="handleMinting">
-      <label for="assetLink">Asset URL:</label>
-      <input
-        id="assetLink"
-        type="text"
-        placeholder="Enter the URL of your asset"
-        v-model="assetUrl"
-      />
+      <!-- Image Upload -->
+      <label for="assetFile">Asset File:</label>
+      <input id="assetFile" type="file" @change="handleFileChange" />
 
-      <label for="nftName">NFT Name:</label>
-      <input
-        id="nftName"
-        type="text"
-        placeholder="Enter the name of your NFT"
-        v-model="nftName"
-      />
-
-      <label for="nftDescription">Description:</label>
-      <input
-        id="nftDescription"
-        type="text"
-        placeholder="Provide a description for your NFT"
-        v-model="nftDescription"
-      />
-
+      <!-- Mint Button -->
       <button type="submit" id="mintNFTButton">Mint NFT</button>
     </form>
 
     <hr />
 
+    <!-- Transfer Section -->
     <h2 id="transferTitle">Transfer Your NFT</h2>
     <form @submit.prevent="handleTransfer">
+      <!-- Token ID -->
       <label for="tokenId">Token ID:</label>
-      <input
-        id="tokenId"
-        type="text"
-        placeholder="Enter the Token ID of your NFT"
-        v-model="tokenId"
-      />
+      <input id="tokenId" type="text" placeholder="Enter the Token ID of your NFT" v-model="tokenId" />
 
+      <!-- Recipient Address -->
       <label for="recipientAddress">Recipient Address:</label>
       <input
         id="recipientAddress"
@@ -60,20 +40,23 @@
         v-model="recipientAddress"
       />
 
+      <!-- Transfer Button -->
       <button type="submit" id="transferNFTButton">Transfer NFT</button>
     </form>
 
     <hr />
 
+    <!-- Owned NFTs Section -->
     <h2 id="ownedNftsTitle">Your NFTs</h2>
     <button @click="fetchMyNFTs">Load My NFTs</button>
-    <ul v-if="ownedNfts && ownedNfts.length > 0">
-      <li v-for="nft in ownedNfts" :key="nft.tokenId">
-        Token ID: {{ nft.tokenId }} - <a :href="nft.tokenURI" target="_blank">View NFT Metadata</a>
-      </li>
-    </ul>
+    <div class="owned-nfts" v-if="ownedNfts && ownedNfts.length > 0">
+      <div class="nft" v-for="nft in ownedNfts" :key="nft.tokenId">
+        <img :src="nft.tokenURI" />
+        <p>Token ID: {{ nft.tokenId }}</p>
+      </div>
+    </div>
     <p v-else>No NFTs found for this wallet.</p>
-
+    <!-- Transaction Status -->
     <p id="transactionStatus" v-if="statusMessage" :style="{ color: 'red' }">
       {{ statusMessage }}
     </p>
@@ -95,10 +78,7 @@ export default {
     const walletAddress = ref(null);
     const statusMessage = ref("");
 
-    const nftName = ref("");
-    const nftDescription = ref("");
-    const assetUrl = ref("");
-
+    const assetFile = ref(null);
     const tokenId = ref("");
     const recipientAddress = ref("");
     const ownedNfts = ref([]);
@@ -108,7 +88,9 @@ export default {
       walletAddress.value = address;
       statusMessage.value = status;
 
-      await fetchMyNFTs();
+      if (walletAddress.value) {
+        await fetchMyNFTs();
+      }
       listenForAccountChanges();
     });
 
@@ -132,25 +114,36 @@ export default {
       const { address, status } = await connectWallet();
       walletAddress.value = address;
       statusMessage.value = status;
+      if (walletAddress.value) {
+        await fetchMyNFTs();
+      }
+    };
+
+    const handleFileChange = (event) => {
+      assetFile.value = event.target.files[0];
     };
 
     const handleMinting = async () => {
-      const { success, status } = await mintToken(
-        assetUrl.value,
-        nftName.value,
-        nftDescription.value
-      );
+      if (!assetFile.value) {
+        statusMessage.value = "Please upload an image file.";
+        return;
+      }
+
+      const { success, status } = await mintToken(assetFile.value);
       statusMessage.value = status;
       if (success) {
         resetMintForm();
+        await fetchMyNFTs(); // Refresh the list after minting
       }
     };
 
     const handleTransfer = async () => {
-      const { success, status } = await transferNFT(
-        tokenId.value,
-        recipientAddress.value
-      );
+      if (!tokenId.value.trim() || !recipientAddress.value.trim()) {
+        statusMessage.value = "Please provide a valid Token ID and Recipient Address.";
+        return;
+      }
+
+      const { success, status } = await transferNFT(tokenId.value, recipientAddress.value);
       statusMessage.value = status;
       if (success) {
         resetTransferForm();
@@ -158,15 +151,18 @@ export default {
     };
 
     const fetchMyNFTs = async () => {
+      if (!walletAddress.value) {
+        statusMessage.value = "Connect your wallet to view your NFTs.";
+        return;
+      }
+
       const { nfts, status } = await fetchOwnedNFTs(walletAddress.value);
       ownedNfts.value = nfts;
       statusMessage.value = status;
     };
 
     function resetMintForm() {
-      nftName.value = "";
-      nftDescription.value = "";
-      assetUrl.value = "";
+      assetFile.value = null;
     }
 
     function resetTransferForm() {
@@ -177,14 +173,13 @@ export default {
     return {
       walletAddress,
       statusMessage,
-      nftName,
-      nftDescription,
-      assetUrl,
+      assetFile,
       tokenId,
       recipientAddress,
       ownedNfts,
       handleWalletConnection,
       handleMinting,
+      handleFileChange,
       handleTransfer,
       fetchMyNFTs,
     };
@@ -194,4 +189,9 @@ export default {
 
 <style>
 /* Your styles will go here */
+.owned-nfts {
+  display: flex;
+  width: 100%;
+  justify-content: space-evenly;
+}
 </style>
