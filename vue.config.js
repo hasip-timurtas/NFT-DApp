@@ -2,9 +2,8 @@ const { defineConfig } = require('@vue/cli-service')
 
 module.exports = defineConfig({
   transpileDependencies: true,
-
+  publicPath: '/NFT-DApp/',
   devServer: {
-    publicPath: process.env.NODE_ENV === 'production' ? '/NFT-DApp/' : '/',
     host: '0.0.0.0',
     allowedHosts: 'all',
     client: {
