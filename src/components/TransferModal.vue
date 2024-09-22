@@ -1,28 +1,75 @@
 <template>
     <div v-if="show" class="modal-overlay">
-        <div class="modal">
-            <h3>Transfer NFT</h3>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <h3 id="modalTitle">Transfer NFT</h3>
             <p>Token ID: {{ tokenId }}</p>
             <label for="recipientAddress">Recipient Address:</label>
             <input id="recipientAddress" type="text" placeholder="Enter recipient's wallet address"
-                v-model="recipientAddress" />
-            <button @click="confirmTransfer">Confirm Transfer</button>
-            <button @click="$emit('close-modal')">Cancel</button>
+                v-model="recipientAddress" @input="validateAddress" :aria-invalid="!isAddressValid"
+                aria-describedby="addressError" />
+            <p v-if="!isAddressValid" id="addressError" class="error-message">
+                Please enter a valid Ethereum address.
+            </p>
+            <button @click="confirmTransfer" :disabled="!isAddressValid">Confirm Transfer</button>
+            <button @click="closeModal">Cancel / Done</button>
         </div>
     </div>
 </template>
 
 <script>
 export default {
-    props: ["show", "tokenId"],
+    /**
+     * Component for transferring an NFT to another wallet.
+     * @component
+     * @prop {boolean} show - Determines whether the modal is visible.
+     * @prop {string|number} tokenId - The ID of the token to transfer.
+     * @emits confirm-transfer - Emitted when the user confirms the transfer.
+     * @emits close-modal - Emitted when the user closes the modal.
+     */
+    props: {
+        show: {
+            type: Boolean,
+            required: true,
+        },
+        tokenId: {
+            type: [String, Number],
+            required: true,
+        },
+    },
     data() {
         return {
-            recipientAddress: "",
+            recipientAddress: '',
+            isAddressValid: true,
         };
     },
     methods: {
+        /**
+         * Validates the recipient Ethereum address.
+         * Sets the isAddressValid flag accordingly.
+         */
+        validateAddress() {
+            const regex = /^(0x)?[0-9a-fA-F]{40}$/;
+            this.isAddressValid = regex.test(this.recipientAddress.trim());
+        },
+        /**
+         * Emits the 'confirm-transfer' event with the recipient address.
+         * Validates the address before emitting.
+         */
         confirmTransfer() {
-            this.$emit("confirm-transfer", this.recipientAddress);
+            if (this.isAddressValid) {
+                this.$emit('confirm-transfer', this.recipientAddress.trim());
+            } else {
+                // Additional error handling if necessary
+            }
+        },
+        /**
+         * Emits the 'close-modal' event to close the modal.
+         * Resets the form fields.
+         */
+        closeModal() {
+            this.recipientAddress = '';
+            this.isAddressValid = true;
+            this.$emit('close-modal');
         },
     },
 };
@@ -66,5 +113,10 @@ export default {
     padding: 10px;
     margin-top: 10px;
     box-sizing: border-box;
+}
+
+.error-message {
+    color: red;
+    font-size: 0.9em;
 }
 </style>
