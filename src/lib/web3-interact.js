@@ -44,24 +44,29 @@ export const connectWallet = async () => {
 export const getCurrentWalletConnected = async () => {
   if (!window.ethereum) {
     return {
+      address: null,
       status: 'Metamask is not installed. Please install Metamask to connect your wallet.',
     };
   }
 
   try {
-    const { signer } = await getProviderAndSigner();
-    const address = await signer.getAddress();
-
-    return {
-      address,
-      status: 'Wallet connected successfully.',
-    };
+    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+    if (accounts.length > 0) {
+      return {
+        address: accounts[0],
+        status: 'Wallet connected successfully.',
+      };
+    } else {
+      return {
+        address: null,
+        status: 'Please connect your wallet using the Connect Wallet button.',
+      };
+    }
   } catch (err) {
-    console.error('Error fetching accounts:', err);
+    console.error('Error checking wallet connection:', err);
     return {
-      status: err.code === 4001
-        ? 'Access to wallet was denied by the user.'
-        : `An error occurred: ${err.message}`,
+      address: null,
+      status: `An error occurred: ${err.message}`,
     };
   }
 };
@@ -134,6 +139,15 @@ export const transferNFT = async (tokenId, recipientAddress) => {
 
 export const fetchOwnedNFTs = async (walletAddress) => {
   try {
+
+    const { address } = await getCurrentWalletConnected();
+
+    if (!address) {
+      return {
+        success: false,
+        status: 'Wallet is not connected. Please connect your wallet.',
+      };
+    }
     const contract = await initializeContract();
     const balance = await contract.balanceOf(walletAddress);
     const nfts = [];

@@ -1,9 +1,6 @@
 async function main() {
     const MhtNFT = await ethers.getContractFactory("MhtNFT");
-    const deployedContract = await MhtNFT.deploy({
-        gasLimit: 3000000,
-        gasPrice: ethers.parseUnits('10', 'gwei')
-    });
+    const deployedContract = await MhtNFT.deploy();
     console.log("MhtNFT deployed to:", deployedContract.target);
 }
 
