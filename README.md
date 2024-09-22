@@ -33,8 +33,8 @@
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/mhtnft.git
-cd mhtnft
+git clone https://github.com/hasip-timurtas/NFT-DApp.git
+cd NFT-DApp
 ```
 
 ### 2. Install Dependencies
