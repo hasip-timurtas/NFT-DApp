@@ -9,9 +9,8 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.9.6",
     "core-js": "^3.8.3",
-    "hardhat": "^2.22.11",
+    "ethers": "^6.13.2",
     "vue": "^3.2.13",
     "web3": "^4.13.0"
   },
@@ -21,13 +20,15 @@
     "@babel/plugin-proposal-class-properties": "^7.18.6",
     "@babel/plugin-transform-private-methods": "^7.25.4",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "^4.9.6",
     "@vue/cli-plugin-babel": "~5.0.0",
     "@vue/cli-plugin-eslint": "~5.0.0",
     "@vue/cli-service": "~5.0.0",
     "dotenv": "^16.4.5",
     "eslint": "^7.32.0",
     "eslint-plugin-vue": "^8.0.3",
-    "gh-pages": "^6.1.1"
+    "gh-pages": "^6.1.1",
+    "hardhat": "^2.22.11"
   },
   "eslintConfig": {
     "root": true,

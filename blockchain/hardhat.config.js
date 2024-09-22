@@ -1,8 +1,5 @@
 require("@nomicfoundation/hardhat-toolbox");
-require("dotenv").config(); // Load .env variables
-
-console.log(process.env.INFURA_PROJECT_ID);
-console.log(process.env.ETH_PRIVATE_KEY);
+require("dotenv").config();
 
 module.exports = {
   solidity: "0.8.20",

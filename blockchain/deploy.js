@@ -1,7 +1,8 @@
 async function main() {
     const MhtNFT = await ethers.getContractFactory("MhtNFT");
-    const mhtNFT = await MhtNFT.deploy();
-    console.log("MhtNFT deployed to:", mhtNFT.address);
+    await MhtNFT.deploy();
+    const address = await MhtNFT.getAddress()
+    console.log("MhtNFT deployed to:", address);
 }
 
 main()

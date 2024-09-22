@@ -4,7 +4,6 @@ const { ethers } = require("hardhat");
 describe("MhtNFT", function () {
     let MhtNFT;
     let mhtNFT;
-    let owner;
     let addr1;
     let addr2;
 

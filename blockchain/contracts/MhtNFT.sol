@@ -16,7 +16,7 @@ contract MhtNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
     function mintNFT(
         address recipient,
         string memory tokenURI_
-    ) public onlyOwner returns (uint256) {
+    ) public returns (uint256) {
         _tokenIds.increment();
 
         uint256 newItemId = _tokenIds.current();

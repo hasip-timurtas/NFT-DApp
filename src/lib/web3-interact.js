@@ -1,11 +1,19 @@
-import Web3 from 'web3';
-import { infuraProjectId, nftContractAddress } from './constants';
+import { ethers } from 'ethers';
+import { nftContractAddress } from './constants';
 import { uploadImageToIpfs } from './pinata.js';
 
-const infuraUrl = `https://sepolia.infura.io/v3/${infuraProjectId}`;
-const web3 = new Web3(new Web3.providers.HttpProvider(infuraUrl));
-
 const contractABI = require('../MhtNFT-contract-abi.json');
+
+async function getProviderAndSigner() {
+  const provider = new ethers.BrowserProvider(window.ethereum);
+  const signer = await provider.getSigner();
+  return { provider, signer };
+}
+
+async function initializeContract() {
+  const { signer } = await getProviderAndSigner();
+  return new ethers.Contract(nftContractAddress, contractABI, signer);
+}
 
 export const connectWallet = async () => {
   if (!window.ethereum) {
@@ -16,22 +24,15 @@ export const connectWallet = async () => {
 
   try {
     await window.ethereum.request({ method: 'eth_requestAccounts' });
-    web3.setProvider(window.ethereum);
-    const accounts = await web3.eth.getAccounts();
-
-    if (accounts.length === 0) {
-      return {
-        status: 'No accounts found. Please ensure Metamask is connected.',
-      };
-    }
+    const { signer } = await getProviderAndSigner();
+    const address = await signer.getAddress();
 
     return {
       status: 'Wallet connected successfully.',
-      address: accounts[0],
+      address,
     };
   } catch (err) {
     console.error('Error connecting wallet:', err);
-
     return {
       status: err.code === 4001
         ? 'Connection request was denied by the user.'
@@ -48,23 +49,15 @@ export const getCurrentWalletConnected = async () => {
   }
 
   try {
-    const accounts = await window.ethereum.request({
-      method: "eth_accounts",
-    });
-
-    if (accounts.length === 0) {
-      return {
-        status: 'No wallet connected. Please connect to Metamask.',
-      };
-    }
+    const { signer } = await getProviderAndSigner();
+    const address = await signer.getAddress();
 
     return {
-      address: accounts[0],
+      address,
       status: 'Wallet connected successfully.',
     };
   } catch (err) {
     console.error('Error fetching accounts:', err);
-
     return {
       status: err.code === 4001
         ? 'Access to wallet was denied by the user.'
@@ -72,10 +65,6 @@ export const getCurrentWalletConnected = async () => {
     };
   }
 };
-
-async function initializeContract() {
-  return new web3.eth.Contract(contractABI, nftContractAddress);
-}
 
 export const mintToken = async (file) => {
   if (!file) {
@@ -85,7 +74,6 @@ export const mintToken = async (file) => {
     };
   }
 
-  // Upload the image to IPFS
   const imageResponse = await uploadImageToIpfs(file);
   if (!imageResponse.success) {
     return {
@@ -98,21 +86,14 @@ export const mintToken = async (file) => {
 
   try {
     const contract = await initializeContract();
+    const signerAddress = await contract.signer.getAddress();
 
-    const transactionDetails = {
-      to: nftContractAddress,
-      from: window.ethereum.selectedAddress,
-      data: contract.methods.mintNFT(window.ethereum.selectedAddress, imageUrl).encodeABI(),
-    };
-
-    const transactionHash = await window.ethereum.request({
-      method: 'eth_sendTransaction',
-      params: [transactionDetails],
-    });
+    const tx = await contract.mintNFT(signerAddress, imageUrl);
+    await tx.wait();
 
     return {
       success: true,
-      status: `Transaction successful! View it on Etherscan: https://sepolia.etherscan.io/tx/${transactionHash}`,
+      status: `Transaction successful! View it on Etherscan: https://sepolia.etherscan.io/tx/${tx.hash}`,
     };
   } catch (error) {
     return {
@@ -122,7 +103,6 @@ export const mintToken = async (file) => {
   }
 };
 
-// New: Transfer NFT function
 export const transferNFT = async (tokenId, recipientAddress) => {
   if (!tokenId || !recipientAddress.trim()) {
     return {
@@ -133,25 +113,14 @@ export const transferNFT = async (tokenId, recipientAddress) => {
 
   try {
     const contract = await initializeContract();
+    const signerAddress = await contract.signer.getAddress();
 
-    const transactionDetails = {
-      to: nftContractAddress,
-      from: window.ethereum.selectedAddress,
-      data: contract.methods.transferFrom(
-        window.ethereum.selectedAddress,
-        recipientAddress,
-        tokenId
-      ).encodeABI(),
-    };
-
-    const transactionHash = await window.ethereum.request({
-      method: 'eth_sendTransaction',
-      params: [transactionDetails],
-    });
+    const tx = await contract.transferFrom(signerAddress, recipientAddress, tokenId);
+    await tx.wait();
 
     return {
       success: true,
-      status: `NFT transferred successfully! View it on Etherscan: https://sepolia.etherscan.io/tx/${transactionHash}`,
+      status: `NFT transferred successfully! View it on Etherscan: https://sepolia.etherscan.io/tx/${tx.hash}`,
     };
   } catch (error) {
     return {
@@ -164,12 +133,13 @@ export const transferNFT = async (tokenId, recipientAddress) => {
 export const fetchOwnedNFTs = async (walletAddress) => {
   try {
     const contract = await initializeContract();
-    const balance = await contract.methods.balanceOf(walletAddress).call();
+    const balance = await contract.balanceOf(walletAddress);
     const nfts = [];
-    for (let i = 0; i < balance; i++) {
-      const tokenId = await contract.methods.tokenOfOwnerByIndex(walletAddress, i).call();
-      const tokenURI = await contract.methods.tokenURI(tokenId).call();
-      nfts.push({ tokenId, tokenURI });
+
+    for (let i = 0; i < balance.toString(); i++) {
+      const tokenId = await contract.tokenOfOwnerByIndex(walletAddress, i);
+      const tokenURI = await contract.tokenURI(tokenId);
+      nfts.push({ tokenId: tokenId.toString(), tokenURI });
     }
 
     return {
