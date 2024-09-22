@@ -1,70 +1,25 @@
 <template>
   <div class="nft-minter">
-    <!-- Connect Wallet Button -->
-    <button id="walletButton" @click="handleWalletConnection">
-      {{
-        walletAddress
-          ? `Connected: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
-          : "Connect Wallet"
-      }}
-    </button>
-
-    <!-- Minting Section -->
-    <h1 id="pageTitle">NFT Minting Tool</h1>
-    <p>Upload an image and click "Mint" to create your NFT.</p>
-    
-    <form @submit.prevent="handleMinting">
-      <!-- Image Upload -->
-      <label for="assetFile">Asset File:</label>
-      <input id="assetFile" type="file" @change="handleFileChange" />
-
-      <!-- Mint Button -->
-      <button type="submit" id="mintNFTButton">Mint NFT</button>
-    </form>
-
+    <WalletButton :walletAddress="walletAddress" @connect-wallet="handleWalletConnection" />
+    <MintForm @file-change="handleFileChange" @mint-nft="handleMinting" />
     <hr />
-
-    <!-- Transfer Section -->
-    <h2 id="transferTitle">Transfer Your NFT</h2>
-    <form @submit.prevent="handleTransfer">
-      <!-- Token ID -->
-      <label for="tokenId">Token ID:</label>
-      <input id="tokenId" type="text" placeholder="Enter the Token ID of your NFT" v-model="tokenId" />
-
-      <!-- Recipient Address -->
-      <label for="recipientAddress">Recipient Address:</label>
-      <input
-        id="recipientAddress"
-        type="text"
-        placeholder="Enter the recipient's wallet address"
-        v-model="recipientAddress"
-      />
-
-      <!-- Transfer Button -->
-      <button type="submit" id="transferNFTButton">Transfer NFT</button>
-    </form>
-
+    <OwnedNfts :nfts="ownedNfts" @load-nfts="fetchMyNFTs" @transfer-nft="openTransferModal" />
     <hr />
-
-    <!-- Owned NFTs Section -->
-    <h2 id="ownedNftsTitle">Your NFTs</h2>
-    <button @click="fetchMyNFTs">Load My NFTs</button>
-    <div class="owned-nfts" v-if="ownedNfts && ownedNfts.length > 0">
-      <div class="nft" v-for="nft in ownedNfts" :key="nft.tokenId">
-        <img :src="nft.tokenURI" />
-        <p>Token ID: {{ nft.tokenId }}</p>
-      </div>
-    </div>
-    <p v-else>No NFTs found for this wallet.</p>
-    <!-- Transaction Status -->
     <p id="transactionStatus" v-if="statusMessage" :style="{ color: 'red' }">
       {{ statusMessage }}
     </p>
+    <TransferModal :show="showModal" :tokenId="selectedTokenId" @confirm-transfer="confirmTransfer"
+      @close-modal="closeTransferModal" />
   </div>
 </template>
 
 <script>
 import { ref, onMounted } from "vue";
+import WalletButton from "./WalletButton.vue";
+import MintForm from "./MintForm.vue";
+import OwnedNfts from "./OwnedNfts.vue";
+import TransferModal from "./TransferModal.vue";
+
 import {
   connectWallet,
   getCurrentWalletConnected,
@@ -74,14 +29,21 @@ import {
 } from "../lib/web3-interact";
 
 export default {
+  components: {
+    WalletButton,
+    MintForm,
+    OwnedNfts,
+    TransferModal,
+  },
   setup() {
     const walletAddress = ref(null);
     const statusMessage = ref("");
 
     const assetFile = ref(null);
-    const tokenId = ref("");
-    const recipientAddress = ref("");
     const ownedNfts = ref([]);
+
+    const showModal = ref(false);
+    const selectedTokenId = ref(null);
 
     onMounted(async () => {
       const { address, status } = await getCurrentWalletConnected();
@@ -100,10 +62,10 @@ export default {
           if (accounts.length > 0) {
             walletAddress.value = accounts[0];
             statusMessage.value = "Wallet changed. Fetching your NFTs...";
-            await fetchMyNFTs();  // Fetch NFTs when wallet changes
+            await fetchMyNFTs(); // Fetch NFTs when wallet changes
           } else {
             walletAddress.value = null;
-            ownedNfts.value = [];  // Clear NFTs when no wallet is connected
+            ownedNfts.value = []; // Clear NFTs when no wallet is connected
             statusMessage.value = "Please connect to Metamask.";
           }
         });
@@ -121,8 +83,8 @@ export default {
       }
     };
 
-    const handleFileChange = (event) => {
-      assetFile.value = event.target.files[0];
+    const handleFileChange = (file) => {
+      assetFile.value = file;
     };
 
     const handleMinting = async () => {
@@ -139,16 +101,27 @@ export default {
       }
     };
 
-    const handleTransfer = async () => {
-      if (!tokenId.value.trim() || !recipientAddress.value.trim()) {
-        statusMessage.value = "Please provide a valid Token ID and Recipient Address.";
+    const openTransferModal = (tokenId) => {
+      selectedTokenId.value = tokenId;
+      showModal.value = true;
+    };
+
+    const closeTransferModal = () => {
+      showModal.value = false;
+      selectedTokenId.value = null;
+    };
+
+    const confirmTransfer = async (recipientAddress) => {
+      if (!recipientAddress.trim()) {
+        statusMessage.value = "Please provide a valid recipient address.";
         return;
       }
 
-      const { success, status } = await transferNFT(tokenId.value, recipientAddress.value);
+      const { success, status } = await transferNFT(selectedTokenId.value, recipientAddress);
       statusMessage.value = status;
       if (success) {
-        resetTransferForm();
+        await fetchMyNFTs(); // Refresh the list after transfer
+        closeTransferModal();
       }
     };
 
@@ -167,46 +140,20 @@ export default {
       assetFile.value = null;
     }
 
-    function resetTransferForm() {
-      tokenId.value = "";
-      recipientAddress.value = "";
-    }
-
     return {
       walletAddress,
       statusMessage,
-      assetFile,
-      tokenId,
-      recipientAddress,
       ownedNfts,
+      showModal,
+      selectedTokenId,
       handleWalletConnection,
       handleMinting,
       handleFileChange,
-      handleTransfer,
+      openTransferModal,
+      closeTransferModal,
+      confirmTransfer,
       fetchMyNFTs,
     };
   },
 };
 </script>
-
-<style>
-.owned-nfts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-}
-
-.nft {
-  text-align: center;
-  max-width: 150px;
-}
-
-.nft img {
-  max-width: 100%;
-  height: auto;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 5px;
-  background-color: #f9f9f9;
-}
-</style>
