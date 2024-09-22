@@ -85,10 +85,11 @@ export const mintToken = async (file) => {
   const imageUrl = imageResponse.pinataUrl;
 
   try {
+    const { signer } = await getProviderAndSigner();
+    const address = await signer.getAddress();
     const contract = await initializeContract();
-    const signerAddress = await contract.signer.getAddress();
 
-    const tx = await contract.mintNFT(signerAddress, imageUrl);
+    const tx = await contract.mintNFT(address, imageUrl);
     await tx.wait();
 
     return {
@@ -113,9 +114,10 @@ export const transferNFT = async (tokenId, recipientAddress) => {
 
   try {
     const contract = await initializeContract();
-    const signerAddress = await contract.signer.getAddress();
+    const { signer } = await getProviderAndSigner();
+    const address = await signer.getAddress();
 
-    const tx = await contract.transferFrom(signerAddress, recipientAddress, tokenId);
+    const tx = await contract.transferFrom(address, recipientAddress, tokenId);
     await tx.wait();
 
     return {
