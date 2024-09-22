@@ -46,7 +46,8 @@ npm install
 ### 3. Setting Up Environment Variables
 #### Blockchain Configuration
 
-Create a .env file in the blockchain directory with the following content:
+Create a .env file in the blockchain directory with the following content (For smart contract deployment):
+
 
 ```ini
 ETH_PRIVATE_KEY=your_metamask_private_key
@@ -65,9 +66,6 @@ VUE_APP_PINATA_SECRET_API_KEY=your_pinata_secret_api_key
 ```
 
 * VUE_APP_PINATA_API_KEY and VUE_APP_PINATA_SECRET_API_KEY: Your Pinata API credentials for uploading files to IPFS.
-
-### 4. Deploying the Smart Contract
-#### Usin Hardhat
 
 ### 4. Deploying the Smart Contract
 
